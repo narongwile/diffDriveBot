@@ -1,8 +1,15 @@
 body {
     margin: 0;
+    background-color: black; /* พื้นหลังสีดำเพื่อให้กราฟิกเด่นขึ้น */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
     overflow: hidden;
-    background-color: #000;
 }
+
 canvas {
-    display: block;
+    border: 2px solid white; /* ใส่เส้นขอบให้ canvas ดูว่าแสดงผลจริงไหม */
+    background-color: black; /* พื้นหลังสีดำ */
 }
+
