@@ -4,31 +4,31 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let snake = [{ x: 200, y: 200 }];
-let speed = 2; // ความเร็วของงู
-let target = null; // จุดหมายที่งูต้องการไป
-let trajectory = []; // เก็บตำแหน่งที่เคลื่อนที่ผ่าน
-let fadeEffect = null; // สำหรับจุดแสดงแสงสว่าง
+let snake = [{ x: 500, y: 500 }];
+let speed = 2;
+let target = null;
+let trajectory = [];
+let fadeEffect = null;
 
-// ฟังก์ชันวาดแกน X และ Y
+let lastPosition = { x: snake[0].x, y: snake[0].y };
+let lastUpdateTime = performance.now();
+let realTimeSpeed = 0;
+
 function drawAxes() {
     ctx.strokeStyle = "gray";
     ctx.lineWidth = 1;
 
-    // แกน X
     ctx.beginPath();
     ctx.moveTo(0, canvas.height / 2);
     ctx.lineTo(canvas.width, canvas.height / 2);
     ctx.stroke();
 
-    // แกน Y
     ctx.beginPath();
     ctx.moveTo(canvas.width / 2, 0);
     ctx.lineTo(canvas.width / 2, canvas.height);
     ctx.stroke();
 }
 
-// ฟังก์ชันวาด trajectory
 function drawTrajectory() {
     ctx.fillStyle = "red";
     for (let point of trajectory) {
@@ -36,21 +36,18 @@ function drawTrajectory() {
     }
 }
 
-// ฟังก์ชันวาดจุดเป้าหมายที่คลิก (Fade effect)
 function drawFadeEffect() {
     if (fadeEffect) {
         let { x, y, alpha } = fadeEffect;
-        ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`; // สีเหลืองโปร่งแสง
+        ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`;
         ctx.beginPath();
         ctx.arc(x, y, 10, 0, Math.PI * 2);
         ctx.fill();
-
         fadeEffect.alpha -= 0.02;
-        if (fadeEffect.alpha <= 0) fadeEffect = null; // ลบ effect เมื่อจางหมด
+        if (fadeEffect.alpha <= 0) fadeEffect = null;
     }
 }
 
-// ฟังก์ชันวาดงู
 function drawSnake() {
     ctx.fillStyle = "lime";
     for (let part of snake) {
@@ -58,7 +55,7 @@ function drawSnake() {
     }
 }
 
-// ฟังก์ชันอัปเดตการเคลื่อนที่ของงู
+
 function updateSnake() {
     if (target) {
         let head = snake[0];
@@ -74,39 +71,59 @@ function updateSnake() {
             snake.unshift(newHead);
             snake.pop();
 
-            // บันทึก trajectory
             trajectory.push(newHead);
-            if (trajectory.length > 50) trajectory.shift(); // จำกัดขนาดของ trajectory
+            if (trajectory.length > 50) trajectory.shift();
+
+            let now = performance.now();
+            let timeDiff = (now - lastUpdateTime) / 1000; 
+            let traveledDistance = Math.sqrt((newHead.x - lastPosition.x) ** 2 + (newHead.y - lastPosition.y) ** 2);
+
+            if (timeDiff > 0) {
+                realTimeSpeed = traveledDistance / timeDiff;
+            }
+
+            lastPosition = { x: newHead.x, y: newHead.y };
+            lastUpdateTime = now;
+
+            // ส่งข้อมูลไป ESP32 ทุกครั้งที่งูเคลื่อนที่
+            sendSpeedToESP();
         } else {
-            target = null; // หยุดเมื่อถึงเป้าหมาย
+            target = null;
         }
     }
 }
 
-// ฟังก์ชันจับการคลิกและตั้งเป้าหมาย
+
 canvas.addEventListener("click", (event) => {
     target = { x: event.clientX, y: event.clientY };
-    fadeEffect = { x: event.clientX, y: event.clientY, alpha: 1 }; // เริ่ม fade effect
+    fadeEffect = { x: event.clientX, y: event.clientY, alpha: 1 };
 });
 
-// ฟังก์ชันแสดงความเร็วที่มุมล่างซ้าย
+function sendSpeedToESP() {
+    let x = snake[0].x.toFixed(2);
+    let y = snake[0].y.toFixed(2);
+    let speed = realTimeSpeed.toFixed(2);
+
+    fetch(`/updateSpeed?speed=${speed}&x=${x}&y=${y}`)
+        .then(response => response.text())
+        .then(data => console.log(data));
+}
+
 function drawSpeedInfo() {
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
-    ctx.fillText(`Speed: ${speed.toFixed(2)} px/frame`, 10, canvas.height - 20);
+    ctx.fillText(`Speed: ${realTimeSpeed.toFixed(2)} px/s`, 10, canvas.height - 40);
+    ctx.fillText(`X: ${snake[0].x.toFixed(2)} Y: ${snake[0].y.toFixed(2)}`, 10, canvas.height - 20);
 }
 
-// Game loop
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
     drawAxes();
     drawTrajectory();
     drawFadeEffect();
     drawSnake();
     drawSpeedInfo();
     updateSnake();
-
     requestAnimationFrame(gameLoop);
 }
 
