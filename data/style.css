@@ -1,6 +1,6 @@
 body {
     margin: 0;
-    background-color: black; /* พื้นหลังสีดำเพื่อให้กราฟิกเด่นขึ้น */
+    background-color: black;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -9,7 +9,23 @@ body {
 }
 
 canvas {
-    border: 2px solid white; /* ใส่เส้นขอบให้ canvas ดูว่าแสดงผลจริงไหม */
-    background-color: black; /* พื้นหลังสีดำ */
+    border: 2px solid white;
+    background-color: black;
 }
 
+#controls {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+}
+
+#controls .btn {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    border-radius: 8px;
+}
+
+.modal-content {
+    background-color: white;
+}

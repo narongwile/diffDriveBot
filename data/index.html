@@ -1,13 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiffBot</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <canvas id="gameCanvas"></canvas>
+
+    <div id="controls">
+        <button id="left">⬅️</button>
+        <div>
+            <button id="up">⬆️</button>
+            <button id="openModal">⚙️</button>
+            <button id="down">⬇️</button>
+        </div>
+        <button id="right">➡️</button>
+    </div>
+    
+
+    <!-- Modal -->
+    <div id="paramModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Set Parameters</h2>
+
+            <label><input type="radio" name="paramType" value="A"> Set A</label>
+            <label><input type="radio" name="paramType" value="B"> Set B</label>
+
+            <div id="setA">
+                <h3>Set A</h3>
+                <label>X: <input type="number" id="xA"></label>
+                <label>Y: <input type="number" id="yA"></label>
+                <label>Theta: <input type="number" id="thetaA"></label>
+                <label>Time: <input type="number" id="timeA"></label>
+            </div>
+
+            <div id="setB">
+                <h3>Set B</h3>
+                <label>X': <input type="number" id="xB"></label>
+                <label>Y': <input type="number" id="yB"></label>
+                <label>Theta': <input type="number" id="thetaB"></label>
+            </div>
+
+            <button id="applyParams">Apply</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
+
 </html>
