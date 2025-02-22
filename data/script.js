@@ -9,47 +9,16 @@ let speed = 5;
 let target = null;
 let trajectory = [];
 let fadeEffect = null;
-let direction = { x: 0, y: 0 }; // ทิศทางการเคลื่อนที่
-let moving = false; // ตรวจสอบว่างูเคลื่อนที่หรือไม่
+let direction = { x: 0, y: 0 };
+let moving = false;
+
+// ✅ ใช้ Bootstrap Modal API แทนการควบคุม `display`
+const paramModal = new bootstrap.Modal(document.getElementById("paramModal"));
 
 document.getElementById("openModal").addEventListener("click", () => {
-    document.getElementById("paramModal").style.display = "block";
+    paramModal.show();
 });
 
-document.querySelector(".close").addEventListener("click", () => {
-    document.getElementById("paramModal").style.display = "none";
-});
-
-window.addEventListener("click", (event) => {
-    if (event.target === document.getElementById("paramModal")) {
-        document.getElementById("paramModal").style.display = "none";
-    }
-});
-
-// ฟังก์ชันควบคุมการล็อกช่อง input
-function toggleInputs(type) {
-    let inputsA = document.querySelectorAll("#setA input");
-    let inputsB = document.querySelectorAll("#setB input");
-
-    if (type === "A") {
-        inputsA.forEach(input => input.disabled = false);
-        inputsB.forEach(input => input.disabled = true);
-    } else if (type === "B") {
-        inputsA.forEach(input => input.disabled = true);
-        inputsB.forEach(input => input.disabled = false);
-    }
-}
-
-
-
-// ตรวจจับการเลือกชุด Parameter
-document.querySelectorAll('input[name="paramType"]').forEach(radio => {
-    radio.addEventListener("change", (event) => {
-        toggleInputs(event.target.value);
-    });
-});
-
-// Apply Parameters
 document.getElementById("applyParams").addEventListener("click", () => {
     let selectedSet = document.querySelector('input[name="paramType"]:checked');
     if (!selectedSet) {
@@ -74,7 +43,45 @@ document.getElementById("applyParams").addEventListener("click", () => {
     }
 
     console.log("Applied Parameters:", params);
-    document.getElementById("paramModal").style.display = "none";
+    paramModal.hide();
+});
+
+// ✅ ปิดการใช้งานช่อง input ทั้งหมดเริ่มต้น
+function disableAllInputs() {
+    let inputsA = document.querySelectorAll("#setA input");
+    let inputsB = document.querySelectorAll("#setB input");
+
+    inputsA.forEach(input => input.disabled = true);
+    inputsB.forEach(input => input.disabled = true);
+}
+
+// ✅ บังคับให้เลือก Set A หรือ B ก่อน
+document.addEventListener("DOMContentLoaded", () => {
+    disableAllInputs();
+    document.getElementById("applyParams").disabled = true; // ปิดปุ่ม Apply
+});
+
+// ✅ เปิดช่องใส่ค่าตามเซตที่เลือก
+function toggleInputs(type) {
+    let inputsA = document.querySelectorAll("#setA input");
+    let inputsB = document.querySelectorAll("#setB input");
+
+    if (type === "A") {
+        inputsA.forEach(input => input.disabled = false);
+        inputsB.forEach(input => input.disabled = true);
+    } else if (type === "B") {
+        inputsA.forEach(input => input.disabled = true);
+        inputsB.forEach(input => input.disabled = false);
+    }
+
+    document.getElementById("applyParams").disabled = false; // เปิดปุ่ม Apply
+}
+
+// ✅ ตรวจจับการเลือกเซต
+document.querySelectorAll('input[name="paramType"]').forEach(radio => {
+    radio.addEventListener("change", (event) => {
+        toggleInputs(event.target.value);
+    });
 });
 
 
@@ -119,7 +126,7 @@ function drawSnake() {
     }
 }
 
-// เคลื่อนที่ตามเป้าหมาย (จากการคลิก)
+// ✅ เคลื่อนที่ไปยังเป้าหมาย (คลิก)
 function updateSnakeToTarget() {
     if (target) {
         let head = snake[0];
@@ -142,7 +149,7 @@ function updateSnakeToTarget() {
     }
 }
 
-// เคลื่อนที่ตามปุ่มควบคุม
+// ✅ เคลื่อนที่โดยใช้ปุ่มควบคุม
 function updateSnakeWithControls() {
     if (moving) {
         let head = snake[0];
@@ -155,51 +162,43 @@ function updateSnakeWithControls() {
     }
 }
 
-// ตั้งค่าการควบคุมการเคลื่อนที่
-// function moveSnake(dx, dy) {
-//     direction = { x: dx, y: dy };
-//     moving = true;
-// }
+// ✅ ฟังก์ชันเคลื่อนที่งูแบบ Smooth (กดปุ่มแล้วค้างไว้)
+function moveSnake(dx, dy) {
+    direction = { x: dx, y: dy };
+    moving = true;
+}
 
+// ✅ หยุดเคลื่อนที่เมื่อปล่อยปุ่ม
 function stopSnake() {
     moving = false;
 }
 
-// คลิกบน canvas เพื่อเคลื่อนที่ไปยังจุดนั้น
+// ✅ คลิกที่ Canvas เพื่อเคลื่อนที่ไปยังตำแหน่งเป้าหมาย
 canvas.addEventListener("click", (event) => {
     target = { x: event.clientX, y: event.clientY };
     fadeEffect = { x: event.clientX, y: event.clientY, alpha: 1 };
 });
 
-// ปุ่ม HTML ควบคุมการเคลื่อนที่
-const moveAmount = 10;
+// ✅ ปุ่มควบคุมการเคลื่อนที่
+const moveAmount = 1;
 
-document.getElementById("up").addEventListener("click", () => moveSnake(0, -moveAmount));
-document.getElementById("down").addEventListener("click", () => moveSnake(0, moveAmount));
-document.getElementById("left").addEventListener("click", () => moveSnake(-moveAmount, 0));
-document.getElementById("right").addEventListener("click", () => moveSnake(moveAmount, 0));
+document.getElementById("up").addEventListener("mousedown", () => moveSnake(0, -moveAmount));
+document.getElementById("down").addEventListener("mousedown", () => moveSnake(0, moveAmount));
+document.getElementById("left").addEventListener("mousedown", () => moveSnake(-moveAmount, 0));
+document.getElementById("right").addEventListener("mousedown", () => moveSnake(moveAmount, 0));
 document.addEventListener("mouseup", stopSnake);
-function moveSnake(dx, dy) {
-    let head = snake[0];
-    let newHead = { x: head.x + dx, y: head.y + dy };
-    snake.unshift(newHead);
-    snake.pop();
-    trajectory.push(newHead);
-    if (trajectory.length > 50) trajectory.shift();
-}
 
-
-
-// คีย์บอร์ดควบคุม
+// ✅ คีย์บอร์ดควบคุมแบบ Smooth
 document.addEventListener("keydown", (event) => {
     if (event.key === "ArrowUp") moveSnake(0, -1);
     if (event.key === "ArrowDown") moveSnake(0, 1);
     if (event.key === "ArrowLeft") moveSnake(-1, 0);
     if (event.key === "ArrowRight") moveSnake(1, 0);
 });
+
 document.addEventListener("keyup", stopSnake);
 
-// ฟังก์ชันหลักของเกม
+// ✅ ฟังก์ชันหลักของเกม
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawAxes();

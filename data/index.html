@@ -5,51 +5,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiffBot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
-    <canvas id="gameCanvas"></canvas>
+<body class="bg-dark text-white d-flex justify-content-center align-items-center vh-100">
+    <canvas id="gameCanvas" class="border border-white"></canvas>
 
-    <div id="controls">
-        <button id="left">⬅️</button>
-        <div>
-            <button id="up">⬆️</button>
-            <button id="openModal">⚙️</button>
-            <button id="down">⬇️</button>
+    <div id="controls" class="position-fixed bottom-0 start-0 p-3">
+        <div class="d-grid gap-2">
+            <div class="d-flex justify-content-center">
+                <button id="up" class="btn btn-secondary">⬆️</button>
+            </div>
+            <div class="d-flex justify-content-between">
+                <button id="left" class="btn btn-secondary">⬅️</button>
+                <button id="openModal" class="btn btn-primary">⚙️</button>
+                <button id="right" class="btn btn-secondary">➡️</button>
+            </div>
+            <div class="d-flex justify-content-center">
+                <button id="down" class="btn btn-secondary">⬇️</button>
+            </div>
         </div>
-        <button id="right">➡️</button>
     </div>
-    
 
     <!-- Modal -->
-    <div id="paramModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Set Parameters</h2>
-
-            <label><input type="radio" name="paramType" value="A"> Set A</label>
-            <label><input type="radio" name="paramType" value="B"> Set B</label>
-
-            <div id="setA">
-                <h3>Set A</h3>
-                <label>X: <input type="number" id="xA"></label>
-                <label>Y: <input type="number" id="yA"></label>
-                <label>Theta: <input type="number" id="thetaA"></label>
-                <label>Time: <input type="number" id="timeA"></label>
+    <div class="modal fade" id="paramModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content text-dark">
+                <div class="modal-header">
+                    <h5 class="modal-title">Set Parameters</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-check-label">
+                            <input type="radio" name="paramType" value="A" class="form-check-input"> Set Time
+                        </label>
+                        <label class="form-check-label ms-3">
+                            <input type="radio" name="paramType" value="B" class="form-check-input"> None Time
+                        </label>
+                    </div>
+                    <div id="setA">
+                        <h6>Set Time</h6>
+                        <input type="number" id="xA" class="form-control mb-2" placeholder="X">
+                        <input type="number" id="yA" class="form-control mb-2" placeholder="Y">
+                        <input type="number" id="thetaA" class="form-control mb-2" placeholder="Theta">
+                        <input type="number" id="timeA" class="form-control mb-2" placeholder="Time">
+                    </div>
+                    <div id="setB">
+                        <h6>None Time</h6>
+                        <input type="number" id="xB" class="form-control mb-2" placeholder="X'">
+                        <input type="number" id="yB" class="form-control mb-2" placeholder="Y'">
+                        <input type="number" id="thetaB" class="form-control mb-2" placeholder="Theta'">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="applyParams" class="btn btn-success">Apply</button>
+                </div>
             </div>
-
-            <div id="setB">
-                <h3>Set B</h3>
-                <label>X': <input type="number" id="xB"></label>
-                <label>Y': <input type="number" id="yB"></label>
-                <label>Theta': <input type="number" id="thetaB"></label>
-            </div>
-
-            <button id="applyParams">Apply</button>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
 </body>
 
