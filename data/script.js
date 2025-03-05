@@ -4,6 +4,9 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+const gridSize = 50; // 1 ช่อง = 50px = 0.5m
+const snakeSize = (22 / 50) * gridSize; // ขนาดงู = 22cm แปลงเป็น pixel
+
 let snake = [{ x: 500, y: 500 }];
 let speed = 5;
 let target = null;
@@ -103,7 +106,7 @@ function drawAxes() {
 function drawTrajectory() {
     ctx.fillStyle = "red";
     for (let point of trajectory) {
-        ctx.fillRect(point.x, point.y, 4, 4);
+        ctx.fillRect(point.x, point.y, 3, 3);
     }
 }
 
@@ -119,12 +122,55 @@ function drawFadeEffect() {
     }
 }
 
+// function drawGrid() {
+//     ctx.strokeStyle = "rgba(200, 200, 200, 0.3)";
+//     ctx.lineWidth = 1;
+//     for (let x = 0; x < canvas.width; x += gridSize) {
+//         ctx.beginPath();
+//         ctx.moveTo(x, 0);
+//         ctx.lineTo(x, canvas.height);
+//         ctx.stroke();
+//     }
+//     for (let y = 0; y < canvas.height; y += gridSize) {
+//         ctx.beginPath();
+//         ctx.moveTo(0, y);
+//         ctx.lineTo(canvas.width, y);
+//         ctx.stroke();
+//     }
+//}
+function drawDirectionArrow(x, y) {
+    if (direction.x === 0 && direction.y === 0) return; // ถ้างูหยุด ไม่ต้องแสดงลูกศร
+
+    ctx.save(); 
+    ctx.translate(x, y); // ย้ายจุดอ้างอิงไปที่จุดกลางงู
+
+    let angle = Math.atan2(direction.y, direction.x); // คำนวณมุมจากทิศทาง
+    ctx.rotate(angle); // หมุนลูกศรไปตามทิศทาง
+
+    // วาดลูกศร
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.moveTo(snakeSize / 2, 0);
+    ctx.lineTo(-snakeSize / 3, -snakeSize / 4);
+    ctx.lineTo(-snakeSize / 3, snakeSize / 4);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore(); // คืนค่าหลังหมุน
+}
+
+
 function drawSnake() {
     ctx.fillStyle = "lime";
-    for (let part of snake) {
-        ctx.fillRect(part.x, part.y, 10, 10);
-    }
+    let head = snake[0];
+
+    ctx.beginPath();
+    ctx.arc(head.x, head.y, snakeSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    drawDirectionArrow(head.x, head.y); // แสดงลูกศรที่หัวงู
 }
+
 
 // ✅ เคลื่อนที่ไปยังเป้าหมาย (คลิก)
 function updateSnakeToTarget() {
@@ -139,6 +185,12 @@ function updateSnakeToTarget() {
             let moveY = (dy / distance) * speed;
 
             let newHead = { x: head.x + moveX, y: head.y + moveY };
+
+            // ✅ ตรวจจับทิศเฉียง
+            let normX = Math.sign(moveX);
+            let normY = Math.sign(moveY);
+            direction = { x: normX, y: normY };
+
             snake.unshift(newHead);
             snake.pop();
             trajectory.push(newHead);
@@ -149,18 +201,17 @@ function updateSnakeToTarget() {
     }
 }
 
-// ✅ เคลื่อนที่โดยใช้ปุ่มควบคุม
 function updateSnakeWithControls() {
     if (moving) {
         let head = snake[0];
         let newHead = { x: head.x + direction.x * speed, y: head.y + direction.y * speed };
-
         snake.unshift(newHead);
         snake.pop();
         trajectory.push(newHead);
-        if (trajectory.length > 50) trajectory.shift();
+        if (trajectory.length > 100) trajectory.shift(); // จำกัดความยาวของเส้นทาง
     }
 }
+
 
 // ✅ ฟังก์ชันเคลื่อนที่งูแบบ Smooth (กดปุ่มแล้วค้างไว้)
 function moveSnake(dx, dy) {
