@@ -6,6 +6,7 @@ canvas.height = window.innerHeight;
 
 const gridSize = 50; // 1 ช่อง = 50px = 0.5m
 const snakeSize = (22 / 50) * gridSize; // ขนาดงู = 22cm แปลงเป็น pixel
+const wheelDistance = 0.3 * gridSize; // ระยะห่างระหว่างล้อซ้าย-ขวา (30cm)
 
 let snake = [{ x: 500, y: 500 }];
 let speed = 5;
@@ -14,6 +15,16 @@ let trajectory = [];
 let fadeEffect = null;
 let direction = { x: 0, y: 0 };
 let moving = false;
+
+const velocityDisplay = document.createElement("div");
+velocityDisplay.style.position = "absolute";
+velocityDisplay.style.top = "100px";
+velocityDisplay.style.left = "100px";
+velocityDisplay.style.background = "rgba(232, 161, 9, 0.9)";
+velocityDisplay.style.color = "white";
+velocityDisplay.style.padding = "10px";
+velocityDisplay.style.borderRadius = "5px";
+document.body.appendChild(velocityDisplay);
 
 // ✅ ใช้ Bootstrap Modal API แทนการควบคุม `display`
 const paramModal = new bootstrap.Modal(document.getElementById("paramModal"));
@@ -140,8 +151,40 @@ function drawFadeEffect() {
 //}
 function drawDirectionArrow(x, y) {
     if (direction.x === 0 && direction.y === 0) return; // ถ้างูหยุด ไม่ต้องแสดงลูกศร
-
-    ctx.save(); 
+    if (direction.x === 1 && direction.y === 0) { // Right
+        ctx.moveTo(x + snakeSize / 2, y);
+        ctx.lineTo(x + snakeSize / 2 - 10, y - 5);
+        ctx.lineTo(x + snakeSize / 2 - 10, y + 5);
+    } else if (direction.x === -1 && direction.y === 0) { // Left
+        ctx.moveTo(x - snakeSize / 2, y);
+        ctx.lineTo(x - snakeSize / 2 + 10, y - 5);
+        ctx.lineTo(x - snakeSize / 2 + 10, y + 5);
+    } else if (direction.x === 0 && direction.y === 1) { // Down
+        ctx.moveTo(x, y + snakeSize / 2);
+        ctx.lineTo(x - 5, y + snakeSize / 2 - 10);
+        ctx.lineTo(x + 5, y + snakeSize / 2 - 10);
+    } else if (direction.x === 0 && direction.y === -1) { // Up
+        ctx.moveTo(x, y - snakeSize / 2);
+        ctx.lineTo(x - 5, y - snakeSize / 2 + 10);
+        ctx.lineTo(x + 5, y - snakeSize / 2 + 10);
+    } else if (direction.x === 1 && direction.y === -1) { // Diagonal Right-Up
+        ctx.moveTo(x + snakeSize / 2, y - snakeSize / 2);
+        ctx.lineTo(x + snakeSize / 2 - 10, y - snakeSize / 2 + 5);
+        ctx.lineTo(x + snakeSize / 2 - 5, y - snakeSize / 2 + 10);
+    } else if (direction.x === -1 && direction.y === -1) { // Diagonal Left-Up
+        ctx.moveTo(x - snakeSize / 2, y - snakeSize / 2);
+        ctx.lineTo(x - snakeSize / 2 + 10, y - snakeSize / 2 + 5);
+        ctx.lineTo(x - snakeSize / 2 + 5, y - snakeSize / 2 + 10);
+    } else if (direction.x === 1 && direction.y === 1) { // Diagonal Right-Down
+        ctx.moveTo(x + snakeSize / 2, y + snakeSize / 2);
+        ctx.lineTo(x + snakeSize / 2 - 10, y + snakeSize / 2 - 5);
+        ctx.lineTo(x + snakeSize / 2 - 5, y + snakeSize / 2 - 10);
+    } else if (direction.x === -1 && direction.y === 1) { // Diagonal Left-Down
+        ctx.moveTo(x - snakeSize / 2, y + snakeSize / 2);
+        ctx.lineTo(x - snakeSize / 2 + 10, y + snakeSize / 2 - 5);
+        ctx.lineTo(x - snakeSize / 2 + 5, y + snakeSize / 2 - 10);
+    }
+    ctx.save();
     ctx.translate(x, y); // ย้ายจุดอ้างอิงไปที่จุดกลางงู
 
     let angle = Math.atan2(direction.y, direction.x); // คำนวณมุมจากทิศทาง
@@ -200,7 +243,15 @@ function updateSnakeToTarget() {
         }
     }
 }
-
+function updateVelocityDisplay(v, omega, vL, vR) {
+    velocityDisplay.innerHTML = `
+        <b>Velocity Data</b><br>
+        Linear Velocity (v): ${v.toFixed(2)} px/frame<br>
+        Angular Velocity (ω): ${omega.toFixed(2)} rad/frame<br>
+        Left Wheel Speed (vL): ${vL.toFixed(2)} px/frame<br>
+        Right Wheel Speed (vR): ${vR.toFixed(2)} px/frame
+    `;
+}
 function updateSnakeWithControls() {
     if (moving) {
         let head = snake[0];
@@ -209,6 +260,12 @@ function updateSnakeWithControls() {
         snake.pop();
         trajectory.push(newHead);
         if (trajectory.length > 100) trajectory.shift(); // จำกัดความยาวของเส้นทาง
+
+        let vL = speed - (direction.x * speed / 2);
+        let vR = speed + (direction.x * speed / 2);
+        let v = (vL + vR) / 2;
+        let omega = (vR - vL) / wheelDistance;
+        updateVelocityDisplay(v, omega, vL, vR);
     }
 }
 
