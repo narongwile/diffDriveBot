@@ -199,33 +199,33 @@ function drawSnake() {
 
 
 // ✅ เคลื่อนที่ไปยังเป้าหมาย (คลิก)
-function updateSnakeToTarget() {
-    if (target) {
-        let head = snake[0];
-        let dx = target.x - head.x;
-        let dy = target.y - head.y;
-        let distance = Math.sqrt(dx * dx + dy * dy);
+// function updateSnakeToTarget() {
+//     if (target) {
+//         let head = snake[0];
+//         let dx = target.x - head.x;
+//         let dy = target.y - head.y;
+//         let distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance > speed) {
-            let moveX = (dx / distance) * speed;
-            let moveY = (dy / distance) * speed;
+//         if (distance > speed) {
+//             let moveX = (dx / distance) * speed;
+//             let moveY = (dy / distance) * speed;
 
-            let newHead = { x: head.x + moveX, y: head.y + moveY };
+//             let newHead = { x: head.x + moveX, y: head.y + moveY };
 
-            // ✅ ตรวจจับทิศเฉียง
-            let normX = Math.sign(moveX);
-            let normY = Math.sign(moveY);
-            direction = { x: normX, y: normY };
+//             // ✅ ตรวจจับทิศเฉียง
+//             let normX = Math.sign(moveX);
+//             let normY = Math.sign(moveY);
+//             direction = { x: normX, y: normY };
 
-            snake.unshift(newHead);
-            snake.pop();
-            trajectory.push(newHead);
-            if (trajectory.length > 50) trajectory.shift();
-        } else {
-            target = null;
-        }
-    }
-}
+//             snake.unshift(newHead);
+//             snake.pop();
+//             trajectory.push(newHead);
+//             if (trajectory.length > 50) trajectory.shift();
+//         } else {
+//             target = null;
+//         }
+//     }
+// }
 function updateVelocityDisplay(v, omega, vL, vR) {
     velocityDisplay.innerHTML = `
         <b>Velocity Data</b><br>
@@ -267,10 +267,10 @@ function stopSnake() {
 }
 
 // ✅ คลิกที่ Canvas เพื่อเคลื่อนที่ไปยังตำแหน่งเป้าหมาย
-canvas.addEventListener("click", (event) => {
-    target = { x: event.clientX, y: event.clientY };
-    fadeEffect = { x: event.clientX, y: event.clientY, alpha: 1 };
-});
+// canvas.addEventListener("click", (event) => {
+//     target = { x: event.clientX, y: event.clientY };
+//     fadeEffect = { x: event.clientX, y: event.clientY, alpha: 1 };
+// });
 
 // ✅ ปุ่มควบคุมการเคลื่อนที่
 const moveAmount = 1;
@@ -298,7 +298,7 @@ function gameLoop() {
     drawTrajectory();
     drawFadeEffect();
     drawSnake();
-    updateSnakeToTarget();  // ใช้คลิกเพื่อเป้าหมาย
+    // updateSnakeToTarget();  // ใช้คลิกเพื่อเป้าหมาย
     updateSnakeWithControls();  // ใช้ปุ่มควบคุม
     requestAnimationFrame(gameLoop);
 }
