@@ -14,6 +14,7 @@ WebSocketsServer webSocket(81); // WebSocket server on port 81
 float realTimeSpeed = 0;
 float posX = 0;
 float posY = 0;
+float currentAngle = 0; // Add a variable to store the current angle
 
 // Function to handle WebSocket events
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) {
@@ -46,23 +47,34 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
         float omega = doc["omega"].as<float>();
         float vL = doc["vL"].as<float>();
         float vR = doc["vR"].as<float>();
-        Serial.printf("Received Direction: %s, v: %.2f, omega: %.2f, vL: %.2f, vR: %.2f\n", direction, v, omega, vL, vR);
+        currentAngle = doc["angle"].as<float>(); // Get the current angle
+        Serial.printf("Received Direction: %s, v: %.2f, omega: %.2f, vL: %.2f, vR: %.2f, angle: %.2f\n", direction, v, omega, vL, vR, currentAngle);
         // Process direction command here (e.g., move motors)
         if (strcmp(direction, "Forward") == 0) {
           Serial.println("Moving Forward");
-          // Add your motor control code here
+          // Calculate motor speeds for forward movement
+          // Example:
+          // setMotorSpeed(vL, vR);
         } else if (strcmp(direction, "Backward") == 0) {
           Serial.println("Moving Backward");
-          // Add your motor control code here
+          // Calculate motor speeds for backward movement
+          // Example:
+          // setMotorSpeed(-vL, -vR);
         } else if (strcmp(direction, "Turn Left") == 0) {
           Serial.println("Turning Left");
-          // Add your motor control code here
+          // Calculate motor speeds for turning left
+          // Example:
+          // setMotorSpeed(-vL, vR);
         } else if (strcmp(direction, "Turn Right") == 0) {
           Serial.println("Turning Right");
-          // Add your motor control code here
+          // Calculate motor speeds for turning right
+          // Example:
+          // setMotorSpeed(vL, -vR);
         } else if (strcmp(direction, "Stop") == 0) {
           Serial.println("Stopping");
-          // Add your motor control code here
+          // Stop motors
+          // Example:
+          // setMotorSpeed(0, 0);
         } else if (strcmp(direction, "Forward Right") == 0) {
           Serial.println("Moving Forward Right");
           // Add your motor control code here
@@ -157,3 +169,46 @@ void loop() {
   webSocket.loop(); // Keep WebSocket server running
   delay(10);
 }
+
+// // Example motor control function (replace with your actual implementation)
+// void setMotorSpeed(float leftSpeed, float rightSpeed) {
+//     // Assuming you have two motors connected to pins motorLeftPin and motorRightPin
+//     // and you're using PWM to control the speed.
+  
+//     // Map the speed to a PWM value (0-255)
+//     int leftPWM = map(abs(leftSpeed), 0, 10, 0, 255); // Assuming max speed is 10
+//     int rightPWM = map(abs(rightSpeed), 0, 10, 0, 255);
+  
+//     // Set the direction and speed of the left motor
+//     if (leftSpeed > 0) {
+//       // Move forward
+//       digitalWrite(motorLeftForwardPin, HIGH);
+//       digitalWrite(motorLeftBackwardPin, LOW);
+//     } else if (leftSpeed < 0) {
+//       // Move backward
+//       digitalWrite(motorLeftForwardPin, LOW);
+//       digitalWrite(motorLeftBackwardPin, HIGH);
+//     } else {
+//       // Stop
+//       digitalWrite(motorLeftForwardPin, LOW);
+//       digitalWrite(motorLeftBackwardPin, LOW);
+//     }
+//     analogWrite(motorLeftSpeedPin, leftPWM);
+  
+//     // Set the direction and speed of the right motor
+//     if (rightSpeed > 0) {
+//       // Move forward
+//       digitalWrite(motorRightForwardPin, HIGH);
+//       digitalWrite(motorRightBackwardPin, LOW);
+//     } else if (rightSpeed < 0) {
+//       // Move backward
+//       digitalWrite(motorRightForwardPin, LOW);
+//       digitalWrite(motorRightBackwardPin, HIGH);
+//     } else {
+//       // Stop
+//       digitalWrite(motorRightForwardPin, LOW);
+//       digitalWrite(motorRightBackwardPin, LOW);
+//     }
+//     analogWrite(motorRightSpeedPin, rightPWM);
+//   }
+  

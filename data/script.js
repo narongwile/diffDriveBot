@@ -7,8 +7,9 @@ canvas.height = window.innerHeight;
 const gridSize = 50; // 1 ช่อง = 50px = 0.5m
 const snakeSize = (22 / 50) * gridSize; // ขนาดงู = 22cm แปลงเป็น pixel
 const wheelDistance = 0.3 * gridSize; // ระยะห่างระหว่างล้อซ้าย-ขวา (30cm)
+const rotationAngle = 30 * (Math.PI / 180); // 30 degrees in radians
 
-let snake = [{ x: 500, y: 500 }];
+let snake = [{ x: 500, y: 500, angle: 0 }]; // Add angle property
 let speed = 5;
 let target = null;
 let trajectory = [];
@@ -165,15 +166,12 @@ function drawFadeEffect() {
     }
 }
 
-function drawDirectionArrow(x, y) {
-    if (direction.x === 0 && direction.y === 0) return; // ถ้างูหยุด ไม่ต้องแสดงลูกศร
+function drawDirectionArrow(x, y, angle) {
     ctx.save();
-    ctx.translate(x, y); // ย้ายจุดอ้างอิงไปที่จุดกลางงู
+    ctx.translate(x, y); // Move origin to snake's center
+    ctx.rotate(angle); // Rotate by the snake's angle
 
-    let angle = Math.atan2(direction.y, direction.x); // คำนวณมุมจากทิศทาง
-    ctx.rotate(angle); // หมุนลูกศรไปตามทิศทาง
-
-    // วาดลูกศร
+    // Draw the arrow
     ctx.fillStyle = "black";
     ctx.beginPath();
     ctx.moveTo(snakeSize / 2, 0);
@@ -182,7 +180,7 @@ function drawDirectionArrow(x, y) {
     ctx.closePath();
     ctx.fill();
 
-    ctx.restore(); // คืนค่าหลังหมุน
+    ctx.restore(); // Restore original state
 }
 
 
@@ -194,38 +192,9 @@ function drawSnake() {
     ctx.arc(head.x, head.y, snakeSize / 2, 0, Math.PI * 2);
     ctx.fill();
 
-    drawDirectionArrow(head.x, head.y); // แสดงลูกศรที่หัวงู
+    drawDirectionArrow(head.x, head.y, head.angle); // Draw arrow with angle
 }
 
-
-// ✅ เคลื่อนที่ไปยังเป้าหมาย (คลิก)
-// function updateSnakeToTarget() {
-//     if (target) {
-//         let head = snake[0];
-//         let dx = target.x - head.x;
-//         let dy = target.y - head.y;
-//         let distance = Math.sqrt(dx * dx + dy * dy);
-
-//         if (distance > speed) {
-//             let moveX = (dx / distance) * speed;
-//             let moveY = (dy / distance) * speed;
-
-//             let newHead = { x: head.x + moveX, y: head.y + moveY };
-
-//             // ✅ ตรวจจับทิศเฉียง
-//             let normX = Math.sign(moveX);
-//             let normY = Math.sign(moveY);
-//             direction = { x: normX, y: normY };
-
-//             snake.unshift(newHead);
-//             snake.pop();
-//             trajectory.push(newHead);
-//             if (trajectory.length > 50) trajectory.shift();
-//         } else {
-//             target = null;
-//         }
-//     }
-// }
 function updateVelocityDisplay(v, omega, vL, vR) {
     velocityDisplay.innerHTML = `
         <b>Velocity Data</b><br>
@@ -238,18 +207,36 @@ function updateVelocityDisplay(v, omega, vL, vR) {
 function updateSnakeWithControls() {
     if (moving) {
         let head = snake[0];
-        let newHead = { x: head.x + direction.x * speed, y: head.y + direction.y * speed };
+        let newHead = { x: head.x, y: head.y, angle: head.angle }; // Create new head object
+
+        if (direction.x === 0) {
+            // Move forward/backward
+            newHead.x += speed * Math.cos(head.angle) * -direction.y; // Update x based on angle and direction
+            newHead.y += speed * Math.sin(head.angle) * -direction.y; // Update y based on angle and direction
+        } else {
+            // Rotate left/right
+            newHead.angle += direction.x * rotationAngle;
+        }
+
         snake.unshift(newHead);
         snake.pop();
         trajectory.push(newHead);
-        if (trajectory.length > 100) trajectory.shift(); // จำกัดความยาวของเส้นทาง
+        if (trajectory.length > 100) trajectory.shift(); // Limit trajectory length
 
-        let vL = speed - (direction.x * speed / 2);
-        let vR = speed + (direction.x * speed / 2);
-        let v = (vL + vR) / 2;
-        let omega = (vR - vL) / wheelDistance;
+        let vL, vR, v, omega;
+        if (direction.x === 0) {
+            vL = speed * -direction.y;
+            vR = speed * -direction.y;
+            v = (vL + vR) / 2;
+            omega = (vR - vL) / wheelDistance;
+        } else {
+            vL = 0;
+            vR = 0;
+            v = 0;
+            omega = direction.x * rotationAngle;
+        }
         updateVelocityDisplay(v, omega, vL, vR);
-        sendDirectionToESP32(direction, v, omega, vL, vR); // Send direction and velocity to ESP32
+        sendDirectionToESP32(direction, v, omega, vL, vR, head.angle); // Send direction and velocity to ESP32
     }
 }
 
@@ -263,14 +250,8 @@ function moveSnake(dx, dy) {
 // ✅ หยุดเคลื่อนที่เมื่อปล่อยปุ่ม
 function stopSnake() {
     moving = false;
-    sendDirectionToESP32({x:0,y:0},0,0,0,0)
+    sendDirectionToESP32({x:0,y:0},0,0,0,0,snake[0].angle)
 }
-
-// ✅ คลิกที่ Canvas เพื่อเคลื่อนที่ไปยังตำแหน่งเป้าหมาย
-// canvas.addEventListener("click", (event) => {
-//     target = { x: event.clientX, y: event.clientY };
-//     fadeEffect = { x: event.clientX, y: event.clientY, alpha: 1 };
-// });
 
 // ✅ ปุ่มควบคุมการเคลื่อนที่
 const moveAmount = 1;
@@ -298,7 +279,6 @@ function gameLoop() {
     drawTrajectory();
     drawFadeEffect();
     drawSnake();
-    // updateSnakeToTarget();  // ใช้คลิกเพื่อเป้าหมาย
     updateSnakeWithControls();  // ใช้ปุ่มควบคุม
     requestAnimationFrame(gameLoop);
 }
@@ -333,7 +313,7 @@ function onError(event) {
     console.error('WebSocket error:', event);
 }
 
-function sendDirectionToESP32(direction, v, omega, vL, vR) {
+function sendDirectionToESP32(direction, v, omega, vL, vR, angle) {
     if (websocket && websocket.readyState === WebSocket.OPEN) {
         let dirString;
         if (direction.x === 0 && direction.y === -1) {
@@ -355,7 +335,7 @@ function sendDirectionToESP32(direction, v, omega, vL, vR) {
         } else if (direction.x === -1 && direction.y === 1) {
             dirString = "Backward Left";
         }
-        websocket.send(JSON.stringify({ type: "direction", data: dirString, v: v, omega: omega, vL: vL, vR: vR }));
+        websocket.send(JSON.stringify({ type: "direction", data: dirString, v: v, omega: omega, vL: vL, vR: vR, angle: angle }));
     }
 }
 
