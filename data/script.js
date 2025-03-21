@@ -15,6 +15,7 @@ let trajectory = [];
 let fadeEffect = null;
 let direction = { x: 0, y: 0 };
 let moving = false;
+let currentParams = {}; // Store current parameters
 
 const velocityDisplay = document.createElement("div");
 velocityDisplay.style.position = "absolute";
@@ -33,12 +34,33 @@ document.getElementById("openModal").addEventListener("click", () => {
     paramModal.show();
 });
 
-document.getElementById("applyParams").addEventListener("click", () => {
+// ✅ Modal Form Validation
+function validateModalForm() {
     let selectedSet = document.querySelector('input[name="paramType"]:checked');
-    if (!selectedSet) {
-        alert("Please select Set A or Set B");
+    if (!selectedSet) return false;
+
+    let inputs;
+    if (selectedSet.value === "A") {
+        inputs = document.querySelectorAll("#setA input");
+    } else {
+        inputs = document.querySelectorAll("#setB input");
+    }
+
+    for (let input of inputs) {
+        if (input.value === "" || input.value === null) {
+            return false;
+        }
+    }
+    return true;
+}
+
+document.getElementById("applyParams").addEventListener("click", () => {
+    if (!validateModalForm()) {
+        alert("Please fill in all parameter fields.");
         return;
     }
+
+    let selectedSet = document.querySelector('input[name="paramType"]:checked');
 
     let params = {};
     if (selectedSet.value === "A") {
@@ -57,6 +79,8 @@ document.getElementById("applyParams").addEventListener("click", () => {
     }
 
     console.log("Applied Parameters:", params);
+    currentParams = params; // Update current parameters
+    sendParamsToESP32(params); // Send parameters to ESP32
     paramModal.hide();
 });
 
@@ -88,13 +112,21 @@ function toggleInputs(type) {
         inputsB.forEach(input => input.disabled = false);
     }
 
-    document.getElementById("applyParams").disabled = false; // เปิดปุ่ม Apply
+    // ✅ Enable/disable Apply button based on form validity
+    document.getElementById("applyParams").disabled = !validateModalForm();
 }
 
 // ✅ ตรวจจับการเลือกเซต
 document.querySelectorAll('input[name="paramType"]').forEach(radio => {
     radio.addEventListener("change", (event) => {
         toggleInputs(event.target.value);
+    });
+});
+
+// ✅ ตรวจจับการเปลี่ยนแปลงในช่อง input
+document.querySelectorAll("#setA input, #setB input").forEach(input => {
+    input.addEventListener("input", () => {
+        document.getElementById("applyParams").disabled = !validateModalForm();
     });
 });
 
@@ -133,57 +165,8 @@ function drawFadeEffect() {
     }
 }
 
-// function drawGrid() {
-//     ctx.strokeStyle = "rgba(200, 200, 200, 0.3)";
-//     ctx.lineWidth = 1;
-//     for (let x = 0; x < canvas.width; x += gridSize) {
-//         ctx.beginPath();
-//         ctx.moveTo(x, 0);
-//         ctx.lineTo(x, canvas.height);
-//         ctx.stroke();
-//     }
-//     for (let y = 0; y < canvas.height; y += gridSize) {
-//         ctx.beginPath();
-//         ctx.moveTo(0, y);
-//         ctx.lineTo(canvas.width, y);
-//         ctx.stroke();
-//     }
-//}
 function drawDirectionArrow(x, y) {
     if (direction.x === 0 && direction.y === 0) return; // ถ้างูหยุด ไม่ต้องแสดงลูกศร
-    if (direction.x === 1 && direction.y === 0) { // Right
-        ctx.moveTo(x + snakeSize / 2, y);
-        ctx.lineTo(x + snakeSize / 2 - 10, y - 5);
-        ctx.lineTo(x + snakeSize / 2 - 10, y + 5);
-    } else if (direction.x === -1 && direction.y === 0) { // Left
-        ctx.moveTo(x - snakeSize / 2, y);
-        ctx.lineTo(x - snakeSize / 2 + 10, y - 5);
-        ctx.lineTo(x - snakeSize / 2 + 10, y + 5);
-    } else if (direction.x === 0 && direction.y === 1) { // Down
-        ctx.moveTo(x, y + snakeSize / 2);
-        ctx.lineTo(x - 5, y + snakeSize / 2 - 10);
-        ctx.lineTo(x + 5, y + snakeSize / 2 - 10);
-    } else if (direction.x === 0 && direction.y === -1) { // Up
-        ctx.moveTo(x, y - snakeSize / 2);
-        ctx.lineTo(x - 5, y - snakeSize / 2 + 10);
-        ctx.lineTo(x + 5, y - snakeSize / 2 + 10);
-    } else if (direction.x === 1 && direction.y === -1) { // Diagonal Right-Up
-        ctx.moveTo(x + snakeSize / 2, y - snakeSize / 2);
-        ctx.lineTo(x + snakeSize / 2 - 10, y - snakeSize / 2 + 5);
-        ctx.lineTo(x + snakeSize / 2 - 5, y - snakeSize / 2 + 10);
-    } else if (direction.x === -1 && direction.y === -1) { // Diagonal Left-Up
-        ctx.moveTo(x - snakeSize / 2, y - snakeSize / 2);
-        ctx.lineTo(x - snakeSize / 2 + 10, y - snakeSize / 2 + 5);
-        ctx.lineTo(x - snakeSize / 2 + 5, y - snakeSize / 2 + 10);
-    } else if (direction.x === 1 && direction.y === 1) { // Diagonal Right-Down
-        ctx.moveTo(x + snakeSize / 2, y + snakeSize / 2);
-        ctx.lineTo(x + snakeSize / 2 - 10, y + snakeSize / 2 - 5);
-        ctx.lineTo(x + snakeSize / 2 - 5, y + snakeSize / 2 - 10);
-    } else if (direction.x === -1 && direction.y === 1) { // Diagonal Left-Down
-        ctx.moveTo(x - snakeSize / 2, y + snakeSize / 2);
-        ctx.lineTo(x - snakeSize / 2 + 10, y + snakeSize / 2 - 5);
-        ctx.lineTo(x - snakeSize / 2 + 5, y + snakeSize / 2 - 10);
-    }
     ctx.save();
     ctx.translate(x, y); // ย้ายจุดอ้างอิงไปที่จุดกลางงู
 
@@ -266,6 +249,7 @@ function updateSnakeWithControls() {
         let v = (vL + vR) / 2;
         let omega = (vR - vL) / wheelDistance;
         updateVelocityDisplay(v, omega, vL, vR);
+        sendDirectionToESP32(direction, v, omega, vL, vR); // Send direction and velocity to ESP32
     }
 }
 
@@ -279,6 +263,7 @@ function moveSnake(dx, dy) {
 // ✅ หยุดเคลื่อนที่เมื่อปล่อยปุ่ม
 function stopSnake() {
     moving = false;
+    sendDirectionToESP32({x:0,y:0},0,0,0,0)
 }
 
 // ✅ คลิกที่ Canvas เพื่อเคลื่อนที่ไปยังตำแหน่งเป้าหมาย
@@ -319,3 +304,65 @@ function gameLoop() {
 }
 
 gameLoop();
+
+// --- WebSocket Communication ---
+let websocket;
+
+function initWebSocket() {
+    websocket = new WebSocket('ws://' + window.location.hostname + ':81/');
+    websocket.onopen = onOpen;
+    websocket.onclose = onClose;
+    websocket.onmessage = onMessage;
+    websocket.onerror = onError;
+}
+
+function onOpen(event) {
+    console.log('WebSocket connection opened');
+}
+
+function onClose(event) {
+    console.log('WebSocket connection closed');
+    setTimeout(initWebSocket, 2000);
+}
+
+function onMessage(event) {
+    console.log('WebSocket message received:', event.data);
+}
+
+function onError(event) {
+    console.error('WebSocket error:', event);
+}
+
+function sendDirectionToESP32(direction, v, omega, vL, vR) {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        let dirString;
+        if (direction.x === 0 && direction.y === -1) {
+            dirString = "Forward";
+        } else if (direction.x === 0 && direction.y === 1) {
+            dirString = "Backward";
+        } else if (direction.x === -1 && direction.y === 0) {
+            dirString = "Turn Left";
+        } else if (direction.x === 1 && direction.y === 0) {
+            dirString = "Turn Right";
+        } else if (direction.x === 0 && direction.y === 0) {
+            dirString = "Stop";
+        } else if (direction.x === 1 && direction.y === -1) {
+            dirString = "Forward Right";
+        } else if (direction.x === -1 && direction.y === -1) {
+            dirString = "Forward Left";
+        } else if (direction.x === 1 && direction.y === 1) {
+            dirString = "Backward Right";
+        } else if (direction.x === -1 && direction.y === 1) {
+            dirString = "Backward Left";
+        }
+        websocket.send(JSON.stringify({ type: "direction", data: dirString, v: v, omega: omega, vL: vL, vR: vR }));
+    }
+}
+
+function sendParamsToESP32(params) {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.send(JSON.stringify({ type: "params", data: params }));
+    }
+}
+
+initWebSocket();
