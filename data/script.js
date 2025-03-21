@@ -8,7 +8,7 @@ const gridSize = 50; // 1 ช่อง = 50px = 0.5m
 const snakeSize = (22 / 50) * gridSize; // ขนาดงู = 22cm แปลงเป็น pixel
 const wheelDistance = 0.3 * gridSize; // ระยะห่างระหว่างล้อซ้าย-ขวา (30cm)
 const rotationAngle = 30 * (Math.PI / 180); // 30 degrees in radians
-
+const initialSnake = [{ x: 500, y: 500, angle: 0 }];
 let snake = [{ x: 500, y: 500, angle: 0 }]; // Add angle property
 let speed = 5;
 let target = null;
@@ -17,6 +17,17 @@ let fadeEffect = null;
 let direction = { x: 0, y: 0 };
 let moving = false;
 let currentParams = {}; // Store current parameters
+
+// เพิ่มตัวแปรสำหรับแสดงข้อมูลแบบเรียลไทม์
+const realTimeDisplay = document.createElement("div");
+realTimeDisplay.style.position = "absolute";
+realTimeDisplay.style.top = "150px";
+realTimeDisplay.style.left = "100px";
+realTimeDisplay.style.background = "rgba(9, 161, 232, 0.9)";
+realTimeDisplay.style.color = "white";
+realTimeDisplay.style.padding = "10px";
+realTimeDisplay.style.borderRadius = "5px";
+document.body.appendChild(realTimeDisplay);
 
 const velocityDisplay = document.createElement("div");
 velocityDisplay.style.position = "absolute";
@@ -283,6 +294,16 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
+function resetSnake() {
+    snake = [...initialSnake]; // คืนค่าตำแหน่งเริ่มต้น
+    trajectory = []; // ล้างเส้นทางการเคลื่อนที่
+    direction = { x: 0, y: 0 }; // หยุดการเคลื่อนที่
+    moving = false; // หยุดการเคลื่อนที่
+    sendDirectionToESP32({x:0,y:0},0,0,0,0,snake[0].angle) // ส่งคำสั่งหยุดไปที่ ESP32
+}
+
+document.getElementById("reset").addEventListener("click", resetSnake);
+
 gameLoop();
 
 // --- WebSocket Communication ---
@@ -307,6 +328,21 @@ function onClose(event) {
 
 function onMessage(event) {
     console.log('WebSocket message received:', event.data);
+    try {
+        const data = JSON.parse(event.data);
+        if (data.type === "realtime") {
+            // อัปเดตค่าใน realTimeDisplay
+            realTimeDisplay.innerHTML = `
+                <b>Real-Time Data</b><br>
+                Speed: ${data.speed.toFixed(2)} px/s<br>
+                X: ${data.x.toFixed(2)}<br>
+                Y: ${data.y.toFixed(2)}<br>
+                Angle: ${data.angle.toFixed(2)}
+            `;
+        }
+    } catch (error) {
+        console.error("Error parsing JSON:", error);
+    }
 }
 
 function onError(event) {
