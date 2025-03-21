@@ -17,17 +17,10 @@ let fadeEffect = null;
 let direction = { x: 0, y: 0 };
 let moving = false;
 let currentParams = {}; // Store current parameters
-
-// เพิ่มตัวแปรสำหรับแสดงข้อมูลแบบเรียลไทม์
-const realTimeDisplay = document.createElement("div");
-realTimeDisplay.style.position = "absolute";
-realTimeDisplay.style.top = "150px";
-realTimeDisplay.style.left = "100px";
-realTimeDisplay.style.background = "rgba(9, 161, 232, 0.9)";
-realTimeDisplay.style.color = "white";
-realTimeDisplay.style.padding = "10px";
-realTimeDisplay.style.borderRadius = "5px";
-document.body.appendChild(realTimeDisplay);
+let currentV = 0;
+let currentOmega = 0;
+let currentVL = 0;
+let currentVR = 0;
 
 const velocityDisplay = document.createElement("div");
 velocityDisplay.style.position = "absolute";
@@ -206,15 +199,22 @@ function drawSnake() {
     drawDirectionArrow(head.x, head.y, head.angle); // Draw arrow with angle
 }
 
-function updateVelocityDisplay(v, omega, vL, vR) {
+function updateVelocityDisplay(v, omega, vL, vR, x, y, angle, speed) {
     velocityDisplay.innerHTML = `
-        <b>Velocity Data</b><br>
+        <b>Robot Data</b><br>
         Linear Velocity (v): ${v.toFixed(2)} px/frame<br>
         Angular Velocity (ω): ${omega.toFixed(2)} rad/frame<br>
         Left Wheel Speed (vL): ${vL.toFixed(2)} px/frame<br>
-        Right Wheel Speed (vR): ${vR.toFixed(2)} px/frame
+        Right Wheel Speed (vR): ${vR.toFixed(2)} px/frame<br>
+        <br>
+        <b>Real-Time Data</b><br>
+        Speed: ${speed.toFixed(2)} px/s<br>
+        X: ${x.toFixed(2)}<br>
+        Y: ${y.toFixed(2)}<br>
+        Angle: ${angle.toFixed(2)}
     `;
 }
+
 function updateSnakeWithControls() {
     if (moving) {
         let head = snake[0];
@@ -234,23 +234,21 @@ function updateSnakeWithControls() {
         trajectory.push(newHead);
         if (trajectory.length > 100) trajectory.shift(); // Limit trajectory length
 
-        let vL, vR, v, omega;
         if (direction.x === 0) {
-            vL = speed * -direction.y;
-            vR = speed * -direction.y;
-            v = (vL + vR) / 2;
-            omega = (vR - vL) / wheelDistance;
+            currentVL = speed * -direction.y;
+            currentVR = speed * -direction.y;
+            currentV = (currentVL + currentVR) / 2;
+            currentOmega = (currentVR - currentVL) / wheelDistance;
         } else {
-            vL = 0;
-            vR = 0;
-            v = 0;
-            omega = direction.x * rotationAngle;
+            currentVL = 0;
+            currentVR = 0;
+            currentV = 0;
+            currentOmega = direction.x * rotationAngle;
         }
-        updateVelocityDisplay(v, omega, vL, vR);
-        sendDirectionToESP32(direction, v, omega, vL, vR, head.angle); // Send direction and velocity to ESP32
+        updateVelocityDisplay(currentV, currentOmega, currentVL, currentVR, 0, 0, 0, 0);
+        sendDirectionToESP32(direction, currentV, currentOmega, currentVL, currentVR, head.angle); // Send direction and velocity to ESP32
     }
 }
-
 
 // ✅ ฟังก์ชันเคลื่อนที่งูแบบ Smooth (กดปุ่มแล้วค้างไว้)
 function moveSnake(dx, dy) {
@@ -331,14 +329,15 @@ function onMessage(event) {
     try {
         const data = JSON.parse(event.data);
         if (data.type === "realtime") {
-            // อัปเดตค่าใน realTimeDisplay
-            realTimeDisplay.innerHTML = `
-                <b>Real-Time Data</b><br>
-                Speed: ${data.speed.toFixed(2)} px/s<br>
-                X: ${data.x.toFixed(2)}<br>
-                Y: ${data.y.toFixed(2)}<br>
-                Angle: ${data.angle.toFixed(2)}
-            `;
+            // อัปเดตค่าใน velocityDisplay
+            // realTimeDisplay.innerHTML = `
+            //     <b>Real-Time Data</b><br>
+            //     Speed: ${data.speed.toFixed(2)} px/s<br>
+            //     X: ${data.x.toFixed(2)}<br>
+            //     Y: ${data.y.toFixed(2)}<br>
+            //     Angle: ${data.angle.toFixed(2)}
+            // `;
+            updateVelocityDisplay(currentV, currentOmega, currentVL, currentVR, data.x, data.y, data.angle, data.speed);
         }
     } catch (error) {
         console.error("Error parsing JSON:", error);
